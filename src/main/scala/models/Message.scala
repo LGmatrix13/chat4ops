@@ -1,24 +1,32 @@
 package models
 
-import upickle.default.ReadWriter
+import upickle.default.{ReadWriter => RW, macroRW}
 
-case class Message(
+case class MessageResponse(
   content: String,
   components: List[ActionRow]
 )
 
+object MessageResponse {
+  implicit val rw: RW[MessageResponse] = macroRW
+}
+
 case class ActionRow(
-  `type`: Int = 1,
+  `type`: Int,
   components: List[Button]
 )
 
+object ActionRow {
+  implicit val rw: RW[ActionRow] = macroRW
+}
+
 case class Button(
- `type`: Int = 2,
+ `type`: Int,
  style: Int,
  label: String,
- custom_id: String
+ custom_id: String,
 )
 
-object Message {
-  implicit val rw: RW[Message] = macroRW
-} 
+object Button {
+  implicit val rw: RW[Button] = macroRW
+}
