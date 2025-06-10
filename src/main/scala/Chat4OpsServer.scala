@@ -36,13 +36,12 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
     .in("api" / "send")
     .out(stringBody)
     .handleSuccess(_ => {
-      val channelId = "1381992836190310482"
+      val channelId = "1381992880834351184"
       DiscordBot.sendAcceptDeclineMessage(channelId)
       "Success"
     })
 
   val discordPublicKey = EnvLoader.get("DISCORD_PUBLIC_KEY")
-  println(discordPublicKey)
   def verifySignature(
      publicKey: String,
      signature: String,
@@ -87,8 +86,6 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
             )
             Right("Success")
           case 3 =>
-            println(body)
-            println(interaction)
             DiscordBot.sendAcceptDeclineInteraction(
               interactionId = interaction.id,
               interactionToken = interaction.token
