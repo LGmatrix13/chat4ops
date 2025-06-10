@@ -1,6 +1,6 @@
 package utilities
 
-import models.{ActionRow, Button, Interaction, MessageResponse}
+import models.{ActionRow, Button, InteractionData, InteractionResponse, MessageResponse}
 import sttp.client4.DefaultSyncBackend
 import sttp.client4.quick.*
 import upickle.default.write
@@ -48,14 +48,18 @@ object DiscordBot {
       .send(backend)
   }
 
-  def sendAcceptDeclineInteraction(channelId: String, interactionToken: String): Unit = {
+  def sendAcceptDeclineInteraction(interactionId: String, interactionToken: String): Unit = {
     val backend = DefaultSyncBackend()
-    val interaction = Interaction(
-      `type` = 4
+    val interaction = InteractionResponse(
+      `type` = 4,
+      data = InteractionData(
+        content = "Thanks for responding!",
+        flags = 64
+      )
     )
     val jsonString: String = write(interaction)
     val response = baseRequest
-      .post(uri"$rootUrl/interactions/$channelId/$interactionToken/callback")
+      .post(uri"$rootUrl/interactions/$interactionId/$interactionToken/callback")
       .body(jsonString)
       .send(backend)
   }

@@ -5,7 +5,7 @@ import upickle.default.{ReadWriter => RW, macroRW}
 case class InteractionRequest(
   `type`: Int,
   token: String,
-  channel_id: String
+  id: String
 )
 
 object InteractionRequest {
@@ -13,10 +13,21 @@ object InteractionRequest {
 }
 
 
-case class Interaction(
+case class InteractionResponse(
   `type`: Int,
+  data: InteractionData
 )
 
-object Interaction {
-  implicit val rw: RW[Interaction] = macroRW
+object InteractionResponse {
+  implicit val rw: RW[InteractionResponse] = macroRW
 }
+
+case class InteractionData(
+  content: String,
+  flags: Int
+)
+
+object InteractionData {
+  implicit val rw: RW[InteractionData] = macroRW
+}
+

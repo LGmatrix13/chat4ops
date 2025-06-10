@@ -1,4 +1,4 @@
-import models.{Interaction, InteractionRequest}
+import models.{InteractionRequest}
 import sttp.shared.Identity
 import sttp.tapir.server.netty.sync.NettySyncServer
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
@@ -65,7 +65,7 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
     .in(header[String]("X-Signature-Ed25519"))
     .in(header[String]("X-Signature-Timestamp"))
     .in(stringBody)
-    .out(jsonBody[Interaction])
+    .out(stringBody)
     .handle { case (signature, timestamp, body) =>
       val isValid = verifySignature(
         discordPublicKey,
@@ -79,20 +79,21 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
         val interaction = read[InteractionRequest](body)
         interaction.`type` match {
           case 1 =>
-            Right(Interaction(`type` = 1))
+            Right("Success")
           case 2 =>
             DiscordBot.sendAcceptDeclineInteraction(
-              channelId = interaction.channel_id,
+              interactionId = interaction.id,
               interactionToken = interaction.token
             )
-            Right(Interaction(`type` = 4))
+            Right("Success")
           case 3 =>
+            println(body)
             println(interaction)
             DiscordBot.sendAcceptDeclineInteraction(
-              channelId = interaction.channel_id,
+              interactionId = interaction.id,
               interactionToken = interaction.token
             )
-            Right(Interaction(`type` = 4))
+            Right("Success")
           case _ =>
             Left(BadRequest())
         }
