@@ -12,7 +12,6 @@ object InteractionRequest {
   implicit val rw: RW[InteractionRequest] = macroRW
 }
 
-
 case class InteractionResponse(
   `type`: Int,
   data: InteractionData
