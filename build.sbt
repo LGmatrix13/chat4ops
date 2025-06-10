@@ -14,6 +14,5 @@ lazy val root = (project in file("."))
       "com.softwaremill.sttp.client4" %% "core" % "4.0.8",
       "org.bouncycastle" % "bcpkix-jdk15on" % "1.70",
       "com.lihaoyi" %% "upickle" % "4.2.1",
-      "io.github.cdimascio" % "dotenv-java" % "3.2.0"
     ))
 

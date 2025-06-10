@@ -1,4 +1,4 @@
-import models.Interaction
+import models.{Interaction, InteractionRequest}
 import sttp.shared.Identity
 import sttp.tapir.server.netty.sync.NettySyncServer
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
@@ -30,7 +30,7 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
 
 @main def main(): Unit =
   EnvLoader.loadEnv("./src/.env")
-  
+
   val sendEndpoint = baseEndpoint
     .get
     .in("api" / "send")
@@ -42,20 +42,17 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
     })
 
   val discordPublicKey = EnvLoader.get("DISCORD_PUBLIC_KEY")
-
+  println(discordPublicKey)
   def verifySignature(
      publicKey: String,
      signature: String,
      timestamp: String,
      body: String
   ): Boolean = {
-    println(publicKey)
-    println(signature)
-    println(timestamp)
-    println(body)
-    val publicKeyBytes = Hex.decode(publicKey)
-    val signatureBytes = Hex.decode(signature)
-    val message = (timestamp + body).getBytes("UTF-8")
+
+    val publicKeyBytes = Hex.decode(publicKey.strip())
+    val signatureBytes = Hex.decode(signature.strip())
+    val message = (timestamp.strip() + body.strip()).getBytes("UTF-8")
     val verifier = new Ed25519Signer()
     verifier.init(false, new Ed25519PublicKeyParameters(publicKeyBytes, 0))
     verifier.update(message, 0, message.length)
@@ -79,14 +76,22 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
       if (!isValid) {
         Left(Unauthorized())
       } else {
-        val interaction = read[Interaction](body)
+        val interaction = read[InteractionRequest](body)
         interaction.`type` match {
           case 1 =>
             Right(Interaction(`type` = 1))
           case 2 =>
+            DiscordBot.sendAcceptDeclineInteraction(
+              channelId = interaction.channel_id,
+              interactionToken = interaction.token
+            )
+            Right(Interaction(`type` = 4))
+          case 3 =>
             println(interaction)
-            val channelId = "1381992836190310482"
-            DiscordBot.sendAcceptDeclineInteraction(channelId, "test")
+            DiscordBot.sendAcceptDeclineInteraction(
+              channelId = interaction.channel_id,
+              interactionToken = interaction.token
+            )
             Right(Interaction(`type` = 4))
           case _ =>
             Left(BadRequest())
