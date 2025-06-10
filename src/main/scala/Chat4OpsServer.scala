@@ -1,4 +1,4 @@
-import models.{InteractionRequest}
+import models.InteractionRequest
 import sttp.shared.Identity
 import sttp.tapir.server.netty.sync.NettySyncServer
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
