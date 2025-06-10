@@ -6,6 +6,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "chat4ops",
     libraryDependencies ++= Seq(
+      "com.lihaoyi" %% "upickle" % "4.2.1",
       "com.softwaremill.sttp.tapir" %% "tapir-core" % "1.11.33",
       "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % "1.11.33",
       "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % "1.11.33",
