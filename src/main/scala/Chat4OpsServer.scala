@@ -82,13 +82,15 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
           case 2 =>
             DiscordBot.sendAcceptDeclineInteraction(
               interactionId = interaction.id,
-              interactionToken = interaction.token
+              interactionToken = interaction.token,
+              customId = interaction.data.custom_id
             )
             Right("Success")
           case 3 =>
             DiscordBot.sendAcceptDeclineInteraction(
               interactionId = interaction.id,
-              interactionToken = interaction.token
+              interactionToken = interaction.token,
+              customId = interaction.data.custom_id
             )
             Right("Success")
           case _ =>
