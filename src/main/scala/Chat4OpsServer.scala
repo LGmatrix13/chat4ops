@@ -42,13 +42,13 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
     })
 
   val discordPublicKey = EnvLoader.get("DISCORD_PUBLIC_KEY")
+
   def verifySignature(
      publicKey: String,
      signature: String,
      timestamp: String,
      body: String
   ): Boolean = {
-
     val publicKeyBytes = Hex.decode(publicKey.strip())
     val signatureBytes = Hex.decode(signature.strip())
     val message = (timestamp.strip() + body.strip()).getBytes("UTF-8")
