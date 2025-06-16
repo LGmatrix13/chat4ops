@@ -7,7 +7,7 @@ case class AcceptDecline(
 ) extends Action
 
 case class Form(
-  inputs: List[Input]
+  inputs: Seq[Input]
 ) extends Action
 
 case class SlashCommand(
