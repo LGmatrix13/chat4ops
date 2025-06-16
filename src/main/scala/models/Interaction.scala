@@ -2,10 +2,10 @@ package models
 
 import upickle.default.{ReadWriter => RW, macroRW}
 
-case class InteractionRequest(
-  `type`: Int,
-  token: String,
-  id: String,
+case class InteractionRequest (
+   `type`: Int,
+   token: String,
+   id: String,
   data: InteractionRequestData
 )
 
