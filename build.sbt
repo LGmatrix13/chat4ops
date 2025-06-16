@@ -13,6 +13,7 @@ lazy val root = (project in file("."))
       "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % "1.11.33",
       "com.softwaremill.sttp.client4" %% "core" % "4.0.8",
       "org.bouncycastle" % "bcpkix-jdk15on" % "1.70",
+      "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
       "com.lihaoyi" %% "upickle" % "4.2.1",
     ))
 

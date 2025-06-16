@@ -1,15 +1,19 @@
 package models
 
-trait Action
+trait Action:
+  val channelId: String
 
 case class AcceptDecline(
-  message: String
+    channelId: String,
+    message: String
 ) extends Action
 
 case class Form(
-  inputs: Seq[Input]
+   channelId: String,
+   inputs: Seq[Input]
 ) extends Action
 
 case class SlashCommand(
-  command: String
+   channelId: String,
+   command: String
 ) extends Action

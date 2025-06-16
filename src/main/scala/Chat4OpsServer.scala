@@ -1,11 +1,9 @@
-import models.InteractionRequest
+import enums.InputType
+import models.*
 import sttp.shared.Identity
 import sttp.tapir.server.netty.sync.NettySyncServer
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
-import utilities.{DiscordBot, EnvLoader}
-import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
-import org.bouncycastle.crypto.signers.Ed25519Signer
-import org.bouncycastle.util.encoders.Hex
+import utilities.{Chat4Ops, DiscordBot, EnvLoader}
 import sttp.tapir.*
 import sttp.tapir.json.circe.*
 import sttp.tapir.generic.auto.*
@@ -31,32 +29,40 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
 @main def main(): Unit =
   EnvLoader.loadEnv("./src/.env")
 
-  val sendEndpoint = baseEndpoint
+  val acceptDeclineEndpoint = baseEndpoint
     .get
-    .in("api" / "send")
+    .in("api" / "send" / "accept-decline")
     .out(stringBody)
     .handleSuccess(_ => {
-      val channelId = "1381992880834351184"
-      DiscordBot.sendAcceptDeclineMessage(channelId)
-      "Success"
+      val success = Chat4Ops.executeAction(
+        action = AcceptDecline(
+          channelId = "1381992880834351184",
+          message = "Please make a decision"
+        )
+      )
+      if success then "Success" else "Failure"
     })
 
-  val discordPublicKey = EnvLoader.get("DISCORD_PUBLIC_KEY")
+  val formEndpoint = baseEndpoint
+    .get
+    .in("api" / "send" / "form")
+    .out(stringBody)
+    .handleSuccess(_ => {
+      val success = Chat4Ops.executeAction(
+        action = Form(
+          channelId = "1381992880834351184",
+          inputs = Seq(
+            Input(
+              label = "Name",
+              required = true,
+              `type` = InputType.Text
+            )
+          )
+        )
+      )
+      if success then "Success" else "Failure"
+    })
 
-  def verifySignature(
-     publicKey: String,
-     signature: String,
-     timestamp: String,
-     body: String
-  ): Boolean = {
-    val publicKeyBytes = Hex.decode(publicKey.strip())
-    val signatureBytes = Hex.decode(signature.strip())
-    val message = (timestamp.strip() + body.strip()).getBytes("UTF-8")
-    val verifier = new Ed25519Signer()
-    verifier.init(false, new Ed25519PublicKeyParameters(publicKeyBytes, 0))
-    verifier.update(message, 0, message.length)
-    verifier.verifySignature(signatureBytes)
-  }
 
   val respondEndpoint = baseEndpoint
     .post
@@ -66,8 +72,7 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
     .in(stringBody)
     .out(stringBody)
     .handle { case (signature, timestamp, body) =>
-      val isValid = verifySignature(
-        discordPublicKey,
+      val isValid = DiscordBot.verifySignature(
         signature,
         timestamp,
         body
