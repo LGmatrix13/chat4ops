@@ -91,12 +91,10 @@ object DiscordBot {
 
   def sendSlashRegistration(slashRegistration: SlashRegistration): Unit = {
     val body = slashRegistration.asJson.noSpaces
-    println(body)
     val response = baseRequest
       .post(uri"$rootUrl/applications/$applicationId/guilds/$guildId/commands")
       .body(body)
       .contentType("application/json")
       .send(backend)
-    print(response.body)
   }
 }

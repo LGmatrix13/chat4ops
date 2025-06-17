@@ -93,7 +93,6 @@ object Chat4OpsServer {
       if (!isValid) {
         Left(Unauthorized())
       } else {
-        println(body)
         val decoded = decode[InteractionRequest](body)
         decoded match {
           case Right(interactionRequest) =>
@@ -113,7 +112,6 @@ object Chat4OpsServer {
             )
             if interactionResponse.isDefined then Right(interactionResponse.get) else Left(BadRequest())
           case Left(error) =>
-            println(error)
             Left(BadRequest())
         }
       }
