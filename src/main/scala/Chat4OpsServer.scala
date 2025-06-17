@@ -35,7 +35,7 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
     .out(stringBody)
     .handleSuccess(_ => {
       val success = Chat4Ops.executeAction(
-        action = AcceptDecline(
+        action = AcceptDeclineAction(
           channelId = "1381992880834351184",
           message = "Please make a decision"
         )
@@ -49,7 +49,7 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
     .out(stringBody)
     .handleSuccess(_ => {
       val success = Chat4Ops.executeAction(
-        action = Form(
+        action = FormAction(
           channelId = "1381992880834351184",
           inputs = Seq(
             Input(
@@ -80,31 +80,21 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
       if (!isValid) {
         Left(Unauthorized())
       } else {
-        val interaction = read[InteractionRequest](body)
-        interaction.`type` match {
-          case 1 =>
-            Right("Success")
-          case 2 =>
-            DiscordBot.sendAcceptDeclineInteraction(
-              interactionId = interaction.id,
-              interactionToken = interaction.token,
-              customId = interaction.data.custom_id
-            )
-            Right("Success")
-          case 3 =>
-            DiscordBot.sendAcceptDeclineInteraction(
-              interactionId = interaction.id,
-              interactionToken = interaction.token,
-              customId = interaction.data.custom_id
-            )
-            Right("Success")
-          case _ =>
-            Left(BadRequest())
-        }
+        val incomingInteraction = read[IncomingInteraction](body)
+        val success = Chat4Ops.executeInteraction(
+          incomingInteraction = incomingInteraction,
+          interactions = Interactions(
+            acceptDeclineInteraction = Some(AcceptDeclineInteraction(
+              decliningMessage = "You decline!",
+              acceptingMessage = "You Accepted!"
+            ))
+          )
+        )
+        if success then Right("Success") else Left(BadRequest())
       }
     }
 
-  val endpoints = List(sendEndpoint, respondEndpoint)
+  val endpoints = List(acceptDeclineEndpoint, formEndpoint, respondEndpoint)
   val swaggerEndpoints = SwaggerInterpreter()
     .fromServerEndpoints[Identity](endpoints, "Chat4Ops", "1.0")
 

@@ -1,12 +1,14 @@
 package utilities
 
-import models.{ActionRow, Button, InteractionResponse, InteractionResponseData, MessageResponse}
+import enums.InteractionType
+import models.{AcceptDeclineInteraction, ActionRow, Button, FormInteraction, IncomingInteraction, Interaction, InteractionResponse, InteractionResponseData, MessageResponse, SlashInteraction}
 import sttp.client4.DefaultSyncBackend
 import sttp.client4.quick.*
 import upickle.default.write
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
 import org.bouncycastle.crypto.signers.Ed25519Signer
 import org.bouncycastle.util.encoders.Hex
+import sttp.model.StatusCode
 
 object DiscordBot {
   private final val rootUrl = "https://discord.com/api/v10"
@@ -27,7 +29,7 @@ object DiscordBot {
    timestamp: String,
    body: String
  ): Boolean = {
-    val publicKeyBytes = Hex.decode(publicKey.strip())
+    val publicKeyBytes = Hex.decode(discordPublicKey.strip())
     val signatureBytes = Hex.decode(signature.strip())
     val message = (timestamp.strip() + body.strip()).getBytes("UTF-8")
     val verifier = new Ed25519Signer()
@@ -41,10 +43,10 @@ object DiscordBot {
     val backend = DefaultSyncBackend()
     val message = MessageResponse(
       content = "Click the button below!",
-      components = List(
+      components = Seq(
         ActionRow(
           `type` = 1,
-          components = List(
+          components = Seq(
             Button(
               `type` = 2,
               style = 1,
@@ -68,20 +70,50 @@ object DiscordBot {
       .send(backend)
   }
 
-  def sendAcceptDeclineInteraction(interactionId: String, interactionToken: String, customId: String): Unit = {
+  private def sendInteraction(incomingInteraction: IncomingInteraction, interaction: Interaction, interactionResponseData: InteractionResponseData): Unit = {
     val backend = DefaultSyncBackend()
-    val content = if customId == "1" then "You accepted!" else "You declined!"
-    val interaction = InteractionResponse(
-      `type` = 4,
-      data = InteractionResponseData(
-        content = content,
-        flags = 64
-      )
+    val interactionResponse = InteractionResponse(
+      `type` = interaction.`type`,
+      data = interactionResponseData
     )
-    val jsonString: String = write(interaction)
+    val jsonString: String = write(interactionResponse)
     val response = baseRequest
-      .post(uri"$rootUrl/interactions/$interactionId/$interactionToken/callback")
+      .post(uri"$rootUrl/interactions/${incomingInteraction.id}/${incomingInteraction.token}/callback")
       .body(jsonString)
       .send(backend)
+  }
+
+  def sendAcceptDeclineInteraction(incomingInteraction: IncomingInteraction, acceptDeclineInteraction: AcceptDeclineInteraction): Unit = {
+    val customId = incomingInteraction.data.custom_id.get
+    sendInteraction(
+      incomingInteraction = incomingInteraction,
+      interaction = acceptDeclineInteraction,
+      interactionResponseData = InteractionResponseData(
+        content = if customId == "accept" then acceptDeclineInteraction.acceptingMessage else acceptDeclineInteraction.decliningMessage,
+        flags = if acceptDeclineInteraction.ephemeral then Some(64) else null
+      )
+    )
+  }
+
+  def sendSlashInteraction(incomingInteraction: IncomingInteraction, slashInteraction: SlashInteraction): Unit = {
+    sendInteraction(
+      incomingInteraction = incomingInteraction,
+      interaction = slashInteraction,
+      interactionResponseData = InteractionResponseData(
+        content = slashInteraction.message,
+        flags = if slashInteraction.ephemeral then Some(64) else null
+      )
+    )
+  }
+
+  def sendFormInteraction(incomingInteraction: IncomingInteraction, formInteraction: FormInteraction): Unit = {
+    sendInteraction(
+      incomingInteraction = incomingInteraction,
+      interaction = formInteraction,
+      interactionResponseData = InteractionResponseData(
+        content = formInteraction.message,
+        flags = if formInteraction.ephemeral then Some(64) else null
+      )
+    )
   }
 }

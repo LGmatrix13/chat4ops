@@ -4,7 +4,7 @@ import upickle.default.{ReadWriter => RW, macroRW}
 
 case class MessageResponse(
   content: String,
-  components: List[ActionRow]
+  components: Seq[ActionRow]
 )
 
 object MessageResponse {
@@ -13,7 +13,7 @@ object MessageResponse {
 
 case class ActionRow(
   `type`: Int,
-  components: List[Button]
+  components: Seq[Button]
 )
 
 object ActionRow {
