@@ -1,14 +1,12 @@
 package models
 
-import enums.InteractionType
 import upickle.default.{macroRW, ReadWriter as RW}
-
 
 case class IncomingInteraction(
   `type`: Int,
   token: String,
   id: String,
-  data: IncomingInteractionData,
+  data: Option[IncomingInteractionData] = null,
 )
 object IncomingInteraction {
   implicit val rw: RW[IncomingInteraction] = macroRW
@@ -49,7 +47,7 @@ case class AcceptDeclineInteraction(
 ) extends Interaction:
   override val `type`: Int = 3
   override def content(incoming: IncomingInteraction): String =
-    incoming.data.custom_id match
+    incoming.data.get.custom_id match
       case Some("accept") => acceptingMessage
       case _ => decliningMessage
 object AcceptDeclineInteraction {
@@ -68,7 +66,7 @@ object FormInteraction {
 
 case class InteractionResponse(
   `type`: Int,
-  data: InteractionResponseData
+  data: Option[InteractionResponseData] = null
 )
 object InteractionResponse {
   implicit val rw: RW[InteractionResponse] = macroRW

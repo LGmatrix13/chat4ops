@@ -1,14 +1,12 @@
 package utilities
 
-import enums.InteractionType
-import models.{AcceptDeclineInteraction, ActionRow, Button, FormInteraction, IncomingInteraction, Interaction, InteractionResponse, InteractionResponseData, MessageResponse, SlashInteraction}
+import models.{ ActionRow, Button, IncomingInteraction, Interaction, InteractionResponse, InteractionResponseData, MessageResponse}
 import sttp.client4.DefaultSyncBackend
 import sttp.client4.quick.*
 import upickle.default.write
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
 import org.bouncycastle.crypto.signers.Ed25519Signer
 import org.bouncycastle.util.encoders.Hex
-import sttp.model.StatusCode
 
 object DiscordBot {
   private final val rootUrl = "https://discord.com/api/v10"
@@ -23,12 +21,11 @@ object DiscordBot {
     .header("User-Agent", s"DiscordBot ($url, $versionNumber)")
     .header("Content-Type", "application/json")
 
-
   def verifySignature(
-   signature: String,
-   timestamp: String,
-   body: String
- ): Boolean = {
+     signature: String,
+     timestamp: String,
+     body: String
+  ): Boolean = {
     val publicKeyBytes = Hex.decode(discordPublicKey.strip())
     val signatureBytes = Hex.decode(signature.strip())
     val message = (timestamp.strip() + body.strip()).getBytes("UTF-8")
@@ -38,11 +35,10 @@ object DiscordBot {
     verifier.verifySignature(signatureBytes)
   }
 
-
-  def sendAcceptDeclineMessage(channelId: String): Unit = {
+  def sendAcceptDeclineMessage(channelId: String, content: String): Unit = {
     val backend = DefaultSyncBackend()
     val message = MessageResponse(
-      content = "Click the button below!",
+      content = content,
       components = Seq(
         ActionRow(
           `type` = 1,
@@ -73,21 +69,21 @@ object DiscordBot {
   def sendInteraction(
      incoming: IncomingInteraction,
      interaction: Interaction
-  ): Unit = {
+  ): InteractionResponse = {
     val response = InteractionResponseData(
       content = interaction.content(incoming),
       flags = if interaction.ephemeral then Some(64) else null
     )
-
-    val fullResponse = InteractionResponse(
+    val interactionResponse = InteractionResponse(
       `type` = interaction.`type`,
-      data = response
+      data = Some(response)
     )
-
     val backend = DefaultSyncBackend()
     baseRequest
       .post(uri"$rootUrl/interactions/${incoming.id}/${incoming.token}/callback")
-      .body(write(fullResponse))
+      .body(write(interactionResponse))
+      .contentType("application/json")
       .send(backend)
+    interactionResponse
   }
 }

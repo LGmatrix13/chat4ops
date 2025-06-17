@@ -1,22 +1,31 @@
-import enums.InputType
+import enums.{InputType, InteractionType}
 import models.*
 import sttp.shared.Identity
 import sttp.tapir.server.netty.sync.NettySyncServer
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import utilities.{Chat4Ops, DiscordBot, EnvLoader}
 import sttp.tapir.*
-import sttp.tapir.json.circe.*
+import sttp.tapir.json.upickle.*
 import sttp.tapir.generic.auto.*
 import sttp.model.StatusCode
-import io.circe.generic.auto.*
+import upickle.default.{macroRW, ReadWriter as RW}
 import upickle.default.read
 
 sealed trait ErrorInfo
 case class NotFound() extends ErrorInfo
-case class Unauthorized() extends ErrorInfo
-case class BadRequest() extends ErrorInfo
-case object NoContent extends ErrorInfo
+object NotFound {
+  implicit val rw: RW[NotFound] = macroRW
+}
 
+case class Unauthorized() extends ErrorInfo
+object Unauthorized {
+  implicit val rw: RW[Unauthorized] = macroRW
+}
+
+case class BadRequest() extends ErrorInfo
+object BadRequest {
+  implicit val rw: RW[BadRequest] = macroRW
+}
 
 object Chat4OpsServer {
   private val baseEndpoint = endpoint.errorOut(
@@ -24,7 +33,6 @@ object Chat4OpsServer {
       oneOfVariant(StatusCode.NotFound, jsonBody[NotFound].description("not found")),
       oneOfVariant(StatusCode.Unauthorized, jsonBody[Unauthorized].description("unauthorized")),
       oneOfVariant(StatusCode.BadRequest, jsonBody[BadRequest].description("bad request")),
-      oneOfVariant(StatusCode.NoContent, emptyOutputAs(NoContent)),
     )
   )
 
@@ -68,7 +76,7 @@ object Chat4OpsServer {
     .in(header[String]("X-Signature-Ed25519"))
     .in(header[String]("X-Signature-Timestamp"))
     .in(stringBody)
-    .out(stringBody)
+    .out(jsonBody[InteractionResponse])
     .handle { case (signature, timestamp, body) =>
       val isValid = DiscordBot.verifySignature(
         signature,
@@ -79,17 +87,25 @@ object Chat4OpsServer {
         Left(Unauthorized())
       } else {
         val incomingInteraction = read[IncomingInteraction](body)
-        val success = Chat4Ops.executeInteraction(
-          incomingInteraction = incomingInteraction,
-          interactions = Interactions(
-            acceptDeclineInteraction = Some(AcceptDeclineInteraction(
-              decliningMessage = "You decline!",
-              acceptingMessage = "You Accepted!",
-              ephemeral = false
-            ))
+        if (incomingInteraction.`type` == InteractionType.Ping.value) {
+          Right(
+            InteractionResponse(
+              `type` = 1
+            )
           )
-        )
-        if success then Right("Success") else Left(BadRequest())
+        } else {
+          val interactionResponse = Chat4Ops.executeInteraction(
+            incomingInteraction = incomingInteraction,
+            interactions = Interactions(
+              acceptDeclineInteraction = Some(AcceptDeclineInteraction(
+                decliningMessage = "You decline!",
+                acceptingMessage = "You Accepted!",
+                ephemeral = false
+              ))
+            )
+          )
+          if interactionResponse.isDefined then Right(interactionResponse.get) else Left(BadRequest())
+        }
       }
     }
 
