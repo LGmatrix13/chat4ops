@@ -13,7 +13,6 @@ object IncomingInteraction {
 }
 
 case class IncomingInteractionData(
-  `type`: Int,
   custom_id: Option[String] = null
 )
 object IncomingInteractionData {

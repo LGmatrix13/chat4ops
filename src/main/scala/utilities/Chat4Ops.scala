@@ -27,8 +27,11 @@ object Chat4Ops {
 
   def executeInteraction(incomingInteraction: IncomingInteraction, interactions: Interactions): Option[InteractionResponse] = {
     incomingInteraction.`type` match {
+      case Ping.value =>
+        Some(InteractionResponse(
+          `type` = 1
+        ))
       case AcceptDecline.value if interactions.acceptDeclineInteraction.isDefined =>
-        println("ran")
         Some(DiscordBot.sendInteraction(
           incoming = incomingInteraction,
           interaction = interactions.acceptDeclineInteraction.get,

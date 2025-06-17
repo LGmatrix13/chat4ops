@@ -87,25 +87,17 @@ object Chat4OpsServer {
         Left(Unauthorized())
       } else {
         val incomingInteraction = read[IncomingInteraction](body)
-        if (incomingInteraction.`type` == InteractionType.Ping.value) {
-          Right(
-            InteractionResponse(
-              `type` = 1
-            )
+        val interactionResponse = Chat4Ops.executeInteraction(
+          incomingInteraction = incomingInteraction,
+          interactions = Interactions(
+            acceptDeclineInteraction = Some(AcceptDeclineInteraction(
+              decliningMessage = "You decline!",
+              acceptingMessage = "You Accepted!",
+              ephemeral = false
+            ))
           )
-        } else {
-          val interactionResponse = Chat4Ops.executeInteraction(
-            incomingInteraction = incomingInteraction,
-            interactions = Interactions(
-              acceptDeclineInteraction = Some(AcceptDeclineInteraction(
-                decliningMessage = "You decline!",
-                acceptingMessage = "You Accepted!",
-                ephemeral = false
-              ))
-            )
-          )
-          if interactionResponse.isDefined then Right(interactionResponse.get) else Left(BadRequest())
-        }
+        )
+        if interactionResponse.isDefined then Right(interactionResponse.get) else Left(BadRequest())
       }
     }
 
