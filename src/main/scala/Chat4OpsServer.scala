@@ -8,8 +8,10 @@ import sttp.tapir.*
 import sttp.tapir.json.upickle.*
 import sttp.tapir.generic.auto.*
 import sttp.model.StatusCode
+import sttp.tapir.server.netty.NettyConfig
 import upickle.default.{macroRW, ReadWriter as RW}
-import upickle.default.read
+import upickle.default.*
+import scala.concurrent.duration.*
 
 sealed trait ErrorInfo
 case class NotFound() extends ErrorInfo
@@ -28,6 +30,7 @@ object BadRequest {
 }
 
 object Chat4OpsServer {
+
   private val baseEndpoint = endpoint.errorOut(
     oneOf[ErrorInfo](
       oneOfVariant(StatusCode.NotFound, jsonBody[NotFound].description("not found")),
@@ -86,26 +89,46 @@ object Chat4OpsServer {
       if (!isValid) {
         Left(Unauthorized())
       } else {
-        val incomingInteraction = read[IncomingInteraction](body)
-        val interactionResponse = Chat4Ops.executeInteraction(
-          incomingInteraction = incomingInteraction,
-          interactions = Interactions(
-            acceptDeclineInteraction = Some(AcceptDeclineInteraction(
-              decliningMessage = "You decline!",
-              acceptingMessage = "You Accepted!",
-              ephemeral = false
-            ))
+        try {
+          println(body)
+          val incomingInteraction = read[IncomingInteraction](body)
+          val interactionResponse = Chat4Ops.executeInteraction(
+            incomingInteraction = incomingInteraction,
+            interactions = Interactions(
+              acceptDeclineInteraction = Some(AcceptDeclineInteraction(
+                decliningMessage = "You decline!",
+                acceptingMessage = "You Accepted!",
+                ephemeral = false
+              )),
+              slashInteraction = Some(SlashInteraction(
+                message = "Responding to your slash command!",
+                ephemeral = true
+              ))
+            )
           )
-        )
-        if interactionResponse.isDefined then Right(interactionResponse.get) else Left(BadRequest())
+          if interactionResponse.isDefined then Right(interactionResponse.get) else Left(BadRequest())
+        } catch {
+          case e: Throwable => {
+            println(body)
+            println(e)
+            Left(BadRequest())
+          }
+        }
       }
     }
-
+  // Add shutdown hook to clean up server
   def start(): Unit = {
+    val config = NettyConfig.default.withGracefulShutdownTimeout(2.seconds)
     val endpoints = List(this.acceptDeclineEndpoint, this.interactionsEndpoint, this.formEndpoint)
+//    Chat4Ops.executeRegistration(
+//      registration = SlashRegistration(
+//        name = "ping",
+//        description = "The ping slash command"
+//      )
+//    )
     val swaggerEndpoints = SwaggerInterpreter()
       .fromServerEndpoints[Identity](endpoints, "Chat4OpsServer", "1.0")
-    NettySyncServer()
+    NettySyncServer(config)
       .port(8080)
       .addEndpoints(endpoints)
       .addEndpoints(swaggerEndpoints)

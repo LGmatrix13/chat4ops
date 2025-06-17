@@ -25,6 +25,15 @@ object Chat4Ops {
     }
   }
 
+  def executeRegistration(registration: Registration): Boolean = {
+    registration match {
+      case slashRegistration: SlashRegistration =>
+        DiscordBot.sendSlashRegistration(slashRegistration)
+        true
+      case _ => false
+    }
+  }
+
   def executeInteraction(incomingInteraction: IncomingInteraction, interactions: Interactions): Option[InteractionResponse] = {
     incomingInteraction.`type` match {
       case Ping.value =>

@@ -1,19 +1,21 @@
 package models
 
+import enums.AcceptDeclineCustomId
 import upickle.default.{macroRW, ReadWriter as RW}
 
 case class IncomingInteraction(
   `type`: Int,
   token: String,
   id: String,
-  data: Option[IncomingInteractionData] = null,
+  data: IncomingInteractionData
 )
 object IncomingInteraction {
   implicit val rw: RW[IncomingInteraction] = macroRW
 }
 
 case class IncomingInteractionData(
-  custom_id: Option[String] = null
+  custom_id: String,
+  component_type: Int,
 )
 object IncomingInteractionData {
   implicit val rw: RW[IncomingInteractionData] = macroRW
@@ -27,7 +29,7 @@ case class SlashInteraction(
    message: String,
    ephemeral: Boolean
 ) extends Interaction:
-  override val `type`: Int = 2
+  override val `type`: Int = 4
   override def content(incoming: IncomingInteraction): String = message
 object SlashInteraction {
   implicit val rw: RW[SlashInteraction] = macroRW
@@ -44,11 +46,13 @@ case class AcceptDeclineInteraction(
  acceptingMessage: String,
  ephemeral: Boolean
 ) extends Interaction:
-  override val `type`: Int = 3
+  override val `type`: Int = 4
   override def content(incoming: IncomingInteraction): String =
-    incoming.data.get.custom_id match
-      case Some("accept") => acceptingMessage
-      case _ => decliningMessage
+    incoming.data.custom_id match
+      case AcceptDeclineCustomId.Accept.value => acceptingMessage
+      case AcceptDeclineCustomId.Decline.value => decliningMessage
+      case _ => "Could not recognize decision. Please try again."
+
 object AcceptDeclineInteraction {
   implicit val rw: RW[AcceptDeclineInteraction] = macroRW
 }
@@ -57,7 +61,7 @@ case class FormInteraction(
   message: String,
   ephemeral: Boolean
 ) extends Interaction:
-  override val `type`: Int = 5
+  override val `type`: Int = 4
   override def content(incoming: IncomingInteraction): String = message
 object FormInteraction {
   implicit val rw: RW[FormInteraction] = macroRW
@@ -65,7 +69,7 @@ object FormInteraction {
 
 case class InteractionResponse(
   `type`: Int,
-  data: Option[InteractionResponseData] = null
+  data: InteractionResponseData = null
 )
 object InteractionResponse {
   implicit val rw: RW[InteractionResponse] = macroRW
@@ -73,7 +77,7 @@ object InteractionResponse {
 
 case class InteractionResponseData(
   content: String,
-  flags: Option[Int] = null
+  flags: Int = 64
 )
 object InteractionResponseData {
   implicit val rw: RW[InteractionResponseData] = macroRW

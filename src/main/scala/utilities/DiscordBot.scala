@@ -1,6 +1,7 @@
 package utilities
 
-import models.{ ActionRow, Button, IncomingInteraction, Interaction, InteractionResponse, InteractionResponseData, MessageResponse}
+import enums.AcceptDeclineCustomId
+import models.{ActionRow, Button, IncomingInteraction, Interaction, InteractionResponse, InteractionResponseData, MessageResponse, SlashRegistration}
 import sttp.client4.DefaultSyncBackend
 import sttp.client4.quick.*
 import upickle.default.write
@@ -10,11 +11,12 @@ import org.bouncycastle.util.encoders.Hex
 
 object DiscordBot {
   private final val rootUrl = "https://discord.com/api/v10"
-  private final val applicationId = EnvLoader.get("DISCORD_APPLICATION_ID")
+  private final val applicationId = EnvLoader.get("DISCORD_BOT_APPLICATION_ID")
+  private final val guildId = EnvLoader.get("DISCORD_BOT_GUILD_ID")
   private final val botToken = EnvLoader.get("DISCORD_BOT_TOKEN")
   private final val url = EnvLoader.get("DISCORD_BOT_URL")
   private final val versionNumber = 1.0
-  private val discordPublicKey = EnvLoader.get("DISCORD_PUBLIC_KEY")
+  private val discordPublicKey = EnvLoader.get("DISCORD_BOT_PUBLIC_KEY")
 
   private def baseRequest = basicRequest
     .header("Authorization", s"Bot $botToken")
@@ -47,13 +49,13 @@ object DiscordBot {
               `type` = 2,
               style = 1,
               label = "Accept",
-              custom_id = "1"
+              custom_id = AcceptDeclineCustomId.Accept.value
             ),
             Button(
               `type` = 2,
               style = 2,
               label = "Decline",
-              custom_id = "2"
+              custom_id = AcceptDeclineCustomId.Decline.value
             )
           )
         )
@@ -70,20 +72,31 @@ object DiscordBot {
      incoming: IncomingInteraction,
      interaction: Interaction
   ): InteractionResponse = {
-    val response = InteractionResponseData(
+    val interactionResponseData = InteractionResponseData(
       content = interaction.content(incoming),
-      flags = if interaction.ephemeral then Some(64) else null
     )
     val interactionResponse = InteractionResponse(
       `type` = interaction.`type`,
-      data = Some(response)
+      data = interactionResponseData
     )
+    val body = write(interactionResponseData)
     val backend = DefaultSyncBackend()
     baseRequest
       .post(uri"$rootUrl/interactions/${incoming.id}/${incoming.token}/callback")
-      .body(write(interactionResponse))
+      .body(body)
       .contentType("application/json")
       .send(backend)
     interactionResponse
+  }
+
+  def sendSlashRegistration(slashRegistration: SlashRegistration): Unit = {
+    val body = write(slashRegistration)
+    println(body)
+    val response = baseRequest
+      .post(uri"$rootUrl/applications/$applicationId/guilds/$guildId/commands")
+      .body(body)
+      .contentType("application/json")
+      .send(backend)
+    print(response.body)
   }
 }
