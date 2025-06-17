@@ -11,10 +11,11 @@ lazy val root = (project in file("."))
       "com.softwaremill.sttp.tapir" %% "tapir-core" % "1.11.34",
       "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % "1.11.34",
       "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % "1.11.34",
-      "com.softwaremill.sttp.tapir" %% "tapir-json-upickle" % "1.11.34",
       "com.softwaremill.sttp.client4" %% "core" % "4.0.8",
       "org.bouncycastle" % "bcpkix-jdk15on" % "1.70",
       "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
-      "com.lihaoyi" %% "upickle" % "3.3.1",
+      "io.circe" %% "circe-core" % "0.14.14",
+      "io.circe" %% "circe-generic" % "0.14.14",
+      "io.circe" %% "circe-parser" % "0.14.14"
     ))
 

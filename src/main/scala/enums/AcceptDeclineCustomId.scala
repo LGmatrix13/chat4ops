@@ -1,6 +1,6 @@
 package enums
 
-import models.IncomingInteraction
+import models.InteractionRequest
 
 enum AcceptDeclineCustomId(val value: String):
   case Accept extends AcceptDeclineCustomId("ACCEPT")

@@ -1,7 +1,6 @@
 package enums
 
-import models.IncomingInteraction
-import upickle.default.{macroRW, ReadWriter as RW}
+import models.InteractionRequest
 
 enum InteractionType(val value: Int):
   case Ping extends InteractionType(1)

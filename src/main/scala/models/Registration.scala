@@ -1,6 +1,8 @@
 package models
 
-import upickle.default.{macroRW, ReadWriter as RW}
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+
 
 trait Registration:
   def `type`: Int
@@ -11,5 +13,6 @@ case class SlashRegistration(
 ) extends Registration:
   override val `type`: Int = 4
 object SlashRegistration {
-  implicit val rw: RW[SlashRegistration] = macroRW
+  implicit val decoder: Decoder[SlashRegistration] = deriveDecoder
+  implicit val encoder: Encoder[SlashRegistration] = deriveEncoder
 }

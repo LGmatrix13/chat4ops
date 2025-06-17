@@ -1,60 +1,67 @@
 package models
 
 import enums.AcceptDeclineCustomId
-import upickle.default.{macroRW, ReadWriter as RW}
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 
-case class IncomingInteraction(
+case class InteractionRequest(
   `type`: Int,
   token: String,
   id: String,
-  data: IncomingInteractionData
+  data: InteractionRequestData
 )
-object IncomingInteraction {
-  implicit val rw: RW[IncomingInteraction] = macroRW
+object InteractionRequest {
+  implicit val decoder: Decoder[InteractionRequest] = deriveDecoder
+  implicit val encoder: Encoder[InteractionRequest] = deriveEncoder
 }
 
-case class IncomingInteractionData(
-  custom_id: String,
-  component_type: Int,
+case class InteractionRequestData(
+  custom_id: Option[String],
+  component_type: Option[Int]
 )
-object IncomingInteractionData {
-  implicit val rw: RW[IncomingInteractionData] = macroRW
+object InteractionRequestData {
+  implicit val decoder: Decoder[InteractionRequestData] = deriveDecoder
+  implicit val encoder: Encoder[InteractionRequestData] = deriveEncoder
 }
 
 trait Interaction:
   def `type`: Int
   def ephemeral: Boolean
-  def content(incoming: IncomingInteraction): String
+  def content(incoming: InteractionRequest): String
+
 case class SlashInteraction(
-   message: String,
-   ephemeral: Boolean
+  message: String,
+  ephemeral: Boolean
 ) extends Interaction:
   override val `type`: Int = 4
-  override def content(incoming: IncomingInteraction): String = message
+  override def content(incoming: InteractionRequest): String = message
+
 object SlashInteraction {
-  implicit val rw: RW[SlashInteraction] = macroRW
+  implicit val decoder: Decoder[SlashInteraction] = deriveDecoder
+  implicit val encoder: Encoder[SlashInteraction] = deriveEncoder
 }
 
 case class Interactions(
-  acceptDeclineInteraction: Option[AcceptDeclineInteraction] = null,
-  slashInteraction: Option[SlashInteraction] = null,
-  formInteraction: Option[FormInteraction] = null
+  acceptDeclineInteraction: Option[AcceptDeclineInteraction] = None,
+  slashInteraction: Option[SlashInteraction] = None,
+  formInteraction: Option[FormInteraction] = None
 )
 
 case class AcceptDeclineInteraction(
- decliningMessage: String,
- acceptingMessage: String,
- ephemeral: Boolean
+   decliningMessage: String,
+   acceptingMessage: String,
+   ephemeral: Boolean
 ) extends Interaction:
   override val `type`: Int = 4
-  override def content(incoming: IncomingInteraction): String =
+  override def content(incoming: InteractionRequest): String =
     incoming.data.custom_id match
-      case AcceptDeclineCustomId.Accept.value => acceptingMessage
-      case AcceptDeclineCustomId.Decline.value => decliningMessage
+      case Some(AcceptDeclineCustomId.Accept.value) => acceptingMessage
+      case Some(AcceptDeclineCustomId.Decline.value) => decliningMessage
       case _ => "Could not recognize decision. Please try again."
 
 object AcceptDeclineInteraction {
-  implicit val rw: RW[AcceptDeclineInteraction] = macroRW
+  implicit val decoder: Decoder[AcceptDeclineInteraction] = deriveDecoder
+  implicit val encoder: Encoder[AcceptDeclineInteraction] = deriveEncoder
 }
 
 case class FormInteraction(
@@ -62,9 +69,11 @@ case class FormInteraction(
   ephemeral: Boolean
 ) extends Interaction:
   override val `type`: Int = 4
-  override def content(incoming: IncomingInteraction): String = message
+  override def content(incoming: InteractionRequest): String = message
+
 object FormInteraction {
-  implicit val rw: RW[FormInteraction] = macroRW
+  implicit val decoder: Decoder[FormInteraction] = deriveDecoder
+  implicit val encoder: Encoder[FormInteraction] = deriveEncoder
 }
 
 case class InteractionResponse(
@@ -72,7 +81,8 @@ case class InteractionResponse(
   data: InteractionResponseData = null
 )
 object InteractionResponse {
-  implicit val rw: RW[InteractionResponse] = macroRW
+  implicit val decoder: Decoder[InteractionResponse] = deriveDecoder
+  implicit val encoder: Encoder[InteractionResponse] = deriveEncoder
 }
 
 case class InteractionResponseData(
@@ -80,5 +90,6 @@ case class InteractionResponseData(
   flags: Int = 64
 )
 object InteractionResponseData {
-  implicit val rw: RW[InteractionResponseData] = macroRW
+  implicit val decoder: Decoder[InteractionResponseData] = deriveDecoder
+  implicit val encoder: Encoder[InteractionResponseData] = deriveEncoder
 }

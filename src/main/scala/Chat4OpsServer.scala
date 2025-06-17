@@ -1,32 +1,36 @@
 import enums.{InputType, InteractionType}
-import models.*
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
+import models._
 import sttp.shared.Identity
 import sttp.tapir.server.netty.sync.NettySyncServer
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import utilities.{Chat4Ops, DiscordBot, EnvLoader}
 import sttp.tapir.*
-import sttp.tapir.json.upickle.*
 import sttp.tapir.generic.auto.*
 import sttp.model.StatusCode
+import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.netty.NettyConfig
-import upickle.default.{macroRW, ReadWriter as RW}
-import upickle.default.*
+import io.circe.parser.*
+
 import scala.concurrent.duration.*
 
 sealed trait ErrorInfo
+
 case class NotFound() extends ErrorInfo
 object NotFound {
-  implicit val rw: RW[NotFound] = macroRW
+  implicit val decoder: Decoder[NotFound] = deriveDecoder
+  implicit val encoder: Encoder[NotFound] = deriveEncoder
 }
-
 case class Unauthorized() extends ErrorInfo
 object Unauthorized {
-  implicit val rw: RW[Unauthorized] = macroRW
+  implicit val decoder: Decoder[Unauthorized] = deriveDecoder
+  implicit val encoder: Encoder[Unauthorized] = deriveEncoder
 }
-
 case class BadRequest() extends ErrorInfo
 object BadRequest {
-  implicit val rw: RW[BadRequest] = macroRW
+  implicit val decoder: Decoder[BadRequest] = deriveDecoder
+  implicit val encoder: Encoder[BadRequest] = deriveEncoder
 }
 
 object Chat4OpsServer {
@@ -89,30 +93,28 @@ object Chat4OpsServer {
       if (!isValid) {
         Left(Unauthorized())
       } else {
-        try {
-          println(body)
-          val incomingInteraction = read[IncomingInteraction](body)
-          val interactionResponse = Chat4Ops.executeInteraction(
-            incomingInteraction = incomingInteraction,
-            interactions = Interactions(
-              acceptDeclineInteraction = Some(AcceptDeclineInteraction(
-                decliningMessage = "You decline!",
-                acceptingMessage = "You Accepted!",
-                ephemeral = false
-              )),
-              slashInteraction = Some(SlashInteraction(
-                message = "Responding to your slash command!",
-                ephemeral = true
-              ))
+        println(body)
+        val decoded = decode[InteractionRequest](body)
+        decoded match {
+          case Right(interactionRequest) =>
+            val interactionResponse = Chat4Ops.executeInteraction(
+              interactionRequest = interactionRequest,
+              interactions = Interactions(
+                acceptDeclineInteraction = Some(AcceptDeclineInteraction(
+                  decliningMessage = "You decline!",
+                  acceptingMessage = "You Accepted!",
+                  ephemeral = false
+                )),
+                slashInteraction = Some(SlashInteraction(
+                  message = "Responding to your slash command!",
+                  ephemeral = true
+                ))
+              )
             )
-          )
-          if interactionResponse.isDefined then Right(interactionResponse.get) else Left(BadRequest())
-        } catch {
-          case e: Throwable => {
-            println(body)
-            println(e)
+            if interactionResponse.isDefined then Right(interactionResponse.get) else Left(BadRequest())
+          case Left(error) =>
+            println(error)
             Left(BadRequest())
-          }
         }
       }
     }

@@ -1,10 +1,10 @@
 package utilities
 
 import enums.AcceptDeclineCustomId
-import models.{ActionRow, Button, IncomingInteraction, Interaction, InteractionResponse, InteractionResponseData, MessageResponse, SlashRegistration}
+import models.{ActionRow, Button, Interaction, InteractionRequest, InteractionResponse, InteractionResponseData, MessageResponse, SlashRegistration}
 import sttp.client4.DefaultSyncBackend
 import sttp.client4.quick.*
-import upickle.default.write
+import io.circe.syntax._
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
 import org.bouncycastle.crypto.signers.Ed25519Signer
 import org.bouncycastle.util.encoders.Hex
@@ -61,15 +61,15 @@ object DiscordBot {
         )
       )
     )
-    val jsonString: String = write(message)
+    val body: String = message.asJson.noSpaces
     val response = baseRequest
       .post(uri"$rootUrl/channels/$channelId/messages")
-      .body(jsonString)
+      .body(body)
       .send(backend)
   }
 
   def sendInteraction(
-     incoming: IncomingInteraction,
+     incoming: InteractionRequest,
      interaction: Interaction
   ): InteractionResponse = {
     val interactionResponseData = InteractionResponseData(
@@ -79,7 +79,7 @@ object DiscordBot {
       `type` = interaction.`type`,
       data = interactionResponseData
     )
-    val body = write(interactionResponseData)
+    val body = interactionResponseData.asJson.noSpaces
     val backend = DefaultSyncBackend()
     baseRequest
       .post(uri"$rootUrl/interactions/${incoming.id}/${incoming.token}/callback")
@@ -90,7 +90,7 @@ object DiscordBot {
   }
 
   def sendSlashRegistration(slashRegistration: SlashRegistration): Unit = {
-    val body = write(slashRegistration)
+    val body = slashRegistration.asJson.noSpaces
     println(body)
     val response = baseRequest
       .post(uri"$rootUrl/applications/$applicationId/guilds/$guildId/commands")

@@ -34,25 +34,25 @@ object Chat4Ops {
     }
   }
 
-  def executeInteraction(incomingInteraction: IncomingInteraction, interactions: Interactions): Option[InteractionResponse] = {
-    incomingInteraction.`type` match {
+  def executeInteraction(interactionRequest: InteractionRequest, interactions: Interactions): Option[InteractionResponse] = {
+    interactionRequest.`type` match {
       case Ping.value =>
         Some(InteractionResponse(
           `type` = 1
         ))
       case AcceptDecline.value if interactions.acceptDeclineInteraction.isDefined =>
         Some(DiscordBot.sendInteraction(
-          incoming = incomingInteraction,
+          incoming = interactionRequest,
           interaction = interactions.acceptDeclineInteraction.get,
         ))
       case Slash.value if interactions.slashInteraction.isDefined =>
         Some(DiscordBot.sendInteraction(
-          incoming = incomingInteraction,
+          incoming = interactionRequest,
           interaction = interactions.slashInteraction.get,
         ))
       case Form.value if interactions.formInteraction.isDefined =>
         Some(DiscordBot.sendInteraction(
-          incoming = incomingInteraction,
+          incoming = interactionRequest,
           interaction = interactions.formInteraction.get
         ))
       case _ => null
