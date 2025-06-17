@@ -22,20 +22,27 @@ object Chat4Ops {
     }
   }
 
-
   def executeInteraction(incomingInteraction: IncomingInteraction, interactions: Interactions): Boolean = {
-    (incomingInteraction.`type`, interactions) match {
-      case (AcceptDecline.value, Interactions(Some(adi), _, _)) =>
-        DiscordBot.sendAcceptDeclineInteraction(incomingInteraction, adi)
+    incomingInteraction.`type` match {
+      case AcceptDecline.value if interactions.acceptDeclineInteraction.isDefined =>
+        DiscordBot.sendInteraction(
+          incoming = incomingInteraction,
+          interaction = interactions.acceptDeclineInteraction.get,
+        )
         true
-      case (Slash.value, Interactions(_, Some(slash), _)) =>
-        DiscordBot.sendSlashInteraction(incomingInteraction, slash)
+      case Slash.value if interactions.slashInteraction.isDefined =>
+        DiscordBot.sendInteraction(
+          incoming = incomingInteraction,
+          interaction = interactions.slashInteraction.get,
+        )
         true
-      case (Form.value, Interactions(_, _, Some(form))) =>
-        DiscordBot.sendFormInteraction(incomingInteraction, form)
+      case Form.value if interactions.formInteraction.isDefined =>
+        DiscordBot.sendInteraction(
+          incoming = incomingInteraction,
+          interaction = interactions.formInteraction.get
+        )
         true
       case _ => false
     }
   }
-
 }

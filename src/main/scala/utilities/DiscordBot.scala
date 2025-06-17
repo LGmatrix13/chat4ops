@@ -70,50 +70,24 @@ object DiscordBot {
       .send(backend)
   }
 
-  private def sendInteraction(incomingInteraction: IncomingInteraction, interaction: Interaction, interactionResponseData: InteractionResponseData): Unit = {
-    val backend = DefaultSyncBackend()
-    val interactionResponse = InteractionResponse(
+  def sendInteraction(
+     incoming: IncomingInteraction,
+     interaction: Interaction
+  ): Unit = {
+    val response = InteractionResponseData(
+      content = interaction.content(incoming),
+      flags = if interaction.ephemeral then Some(64) else null
+    )
+
+    val fullResponse = InteractionResponse(
       `type` = interaction.`type`,
-      data = interactionResponseData
+      data = response
     )
-    val jsonString: String = write(interactionResponse)
-    val response = baseRequest
-      .post(uri"$rootUrl/interactions/${incomingInteraction.id}/${incomingInteraction.token}/callback")
-      .body(jsonString)
+
+    val backend = DefaultSyncBackend()
+    baseRequest
+      .post(uri"$rootUrl/interactions/${incoming.id}/${incoming.token}/callback")
+      .body(write(fullResponse))
       .send(backend)
-  }
-
-  def sendAcceptDeclineInteraction(incomingInteraction: IncomingInteraction, acceptDeclineInteraction: AcceptDeclineInteraction): Unit = {
-    val customId = incomingInteraction.data.custom_id.get
-    sendInteraction(
-      incomingInteraction = incomingInteraction,
-      interaction = acceptDeclineInteraction,
-      interactionResponseData = InteractionResponseData(
-        content = if customId == "accept" then acceptDeclineInteraction.acceptingMessage else acceptDeclineInteraction.decliningMessage,
-        flags = if acceptDeclineInteraction.ephemeral then Some(64) else null
-      )
-    )
-  }
-
-  def sendSlashInteraction(incomingInteraction: IncomingInteraction, slashInteraction: SlashInteraction): Unit = {
-    sendInteraction(
-      incomingInteraction = incomingInteraction,
-      interaction = slashInteraction,
-      interactionResponseData = InteractionResponseData(
-        content = slashInteraction.message,
-        flags = if slashInteraction.ephemeral then Some(64) else null
-      )
-    )
-  }
-
-  def sendFormInteraction(incomingInteraction: IncomingInteraction, formInteraction: FormInteraction): Unit = {
-    sendInteraction(
-      incomingInteraction = incomingInteraction,
-      interaction = formInteraction,
-      interactionResponseData = InteractionResponseData(
-        content = formInteraction.message,
-        flags = if formInteraction.ephemeral then Some(64) else null
-      )
-    )
   }
 }

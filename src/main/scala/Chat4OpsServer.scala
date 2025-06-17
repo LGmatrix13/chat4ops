@@ -17,19 +17,18 @@ case class Unauthorized() extends ErrorInfo
 case class BadRequest() extends ErrorInfo
 case object NoContent extends ErrorInfo
 
-val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut(
-  oneOf[ErrorInfo](
-    oneOfVariant(StatusCode.NotFound, jsonBody[NotFound].description("not found")),
-    oneOfVariant(StatusCode.Unauthorized, jsonBody[Unauthorized].description("unauthorized")),
-    oneOfVariant(StatusCode.BadRequest, jsonBody[BadRequest].description("bad request")),
-    oneOfVariant(StatusCode.NoContent, emptyOutputAs(NoContent)),
+
+object Chat4OpsServer {
+  private val baseEndpoint = endpoint.errorOut(
+    oneOf[ErrorInfo](
+      oneOfVariant(StatusCode.NotFound, jsonBody[NotFound].description("not found")),
+      oneOfVariant(StatusCode.Unauthorized, jsonBody[Unauthorized].description("unauthorized")),
+      oneOfVariant(StatusCode.BadRequest, jsonBody[BadRequest].description("bad request")),
+      oneOfVariant(StatusCode.NoContent, emptyOutputAs(NoContent)),
+    )
   )
-)
 
-@main def main(): Unit =
-  EnvLoader.loadEnv("./src/.env")
-
-  val acceptDeclineEndpoint = baseEndpoint
+  private val acceptDeclineEndpoint = baseEndpoint
     .get
     .in("api" / "send" / "accept-decline")
     .out(stringBody)
@@ -43,7 +42,7 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
       if success then "Success" else "Failure"
     })
 
-  val formEndpoint = baseEndpoint
+   private val formEndpoint = baseEndpoint
     .get
     .in("api" / "send" / "form")
     .out(stringBody)
@@ -63,8 +62,7 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
       if success then "Success" else "Failure"
     })
 
-
-  val respondEndpoint = baseEndpoint
+  private val interactionsEndpoint = baseEndpoint
     .post
     .in("api" / "interactions")
     .in(header[String]("X-Signature-Ed25519"))
@@ -86,7 +84,8 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
           interactions = Interactions(
             acceptDeclineInteraction = Some(AcceptDeclineInteraction(
               decliningMessage = "You decline!",
-              acceptingMessage = "You Accepted!"
+              acceptingMessage = "You Accepted!",
+              ephemeral = false
             ))
           )
         )
@@ -94,12 +93,20 @@ val baseEndpoint: Endpoint[Unit, Unit, ErrorInfo, Unit, Any] = endpoint.errorOut
       }
     }
 
-  val endpoints = List(acceptDeclineEndpoint, formEndpoint, respondEndpoint)
-  val swaggerEndpoints = SwaggerInterpreter()
-    .fromServerEndpoints[Identity](endpoints, "Chat4Ops", "1.0")
+  def start(): Unit = {
+    val endpoints = List(this.acceptDeclineEndpoint, this.interactionsEndpoint, this.formEndpoint)
+    val swaggerEndpoints = SwaggerInterpreter()
+      .fromServerEndpoints[Identity](endpoints, "Chat4OpsServer", "1.0")
+    NettySyncServer()
+      .port(8080)
+      .addEndpoints(endpoints)
+      .addEndpoints(swaggerEndpoints)
+      .startAndWait()
+  }
+}
 
-  NettySyncServer()
-    .port(8080)
-    .addEndpoints(endpoints)
-    .addEndpoints(swaggerEndpoints)
-    .startAndWait()
+@main def main(): Unit = {
+  EnvLoader.loadEnv("./src/.env")
+  Chat4OpsServer.start()
+}
+

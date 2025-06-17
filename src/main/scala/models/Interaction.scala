@@ -25,12 +25,13 @@ object IncomingInteractionData {
 trait Interaction:
   def `type`: Int
   def ephemeral: Boolean
+  def content(incoming: IncomingInteraction): String
 case class SlashInteraction(
    message: String,
    ephemeral: Boolean
 ) extends Interaction:
   override val `type`: Int = 2
-
+  override def content(incoming: IncomingInteraction): String = message
 object SlashInteraction {
   implicit val rw: RW[SlashInteraction] = macroRW
 }
@@ -47,14 +48,20 @@ case class AcceptDeclineInteraction(
  ephemeral: Boolean
 ) extends Interaction:
   override val `type`: Int = 3
+  override def content(incoming: IncomingInteraction): String =
+    incoming.data.custom_id match
+      case Some("accept") => acceptingMessage
+      case _ => decliningMessage
 object AcceptDeclineInteraction {
   implicit val rw: RW[AcceptDeclineInteraction] = macroRW
 }
 
 case class FormInteraction(
-  message: String
+  message: String,
+  ephemeral: Boolean
 ) extends Interaction:
   override val `type`: Int = 5
+  override def content(incoming: IncomingInteraction): String = message
 object FormInteraction {
   implicit val rw: RW[FormInteraction] = macroRW
 }
