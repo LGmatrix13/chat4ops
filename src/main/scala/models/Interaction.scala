@@ -6,9 +6,9 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 
 case class InteractionRequest(
   `type`: Int,
-  token: String,
+  token: Option[String] = null,
   id: String,
-  data: InteractionRequestData
+  data: Option[InteractionRequestData] = null
 )
 object InteractionRequest {
   implicit val decoder: Decoder[InteractionRequest] = deriveDecoder
@@ -54,7 +54,7 @@ case class AcceptDeclineInteraction(
 ) extends Interaction:
   override val `type`: Int = 4
   override def content(incoming: InteractionRequest): String =
-    incoming.data.custom_id match
+    incoming.data.get.custom_id match
       case Some(AcceptDeclineCustomId.Accept.value) => acceptingMessage
       case Some(AcceptDeclineCustomId.Decline.value) => decliningMessage
       case _ => "Could not recognize decision. Please try again."
@@ -78,7 +78,7 @@ object FormInteraction {
 
 case class InteractionResponse(
   `type`: Int,
-  data: InteractionResponseData = null
+  data: Option[InteractionResponseData] = None
 )
 object InteractionResponse {
   implicit val decoder: Decoder[InteractionResponse] = deriveDecoder

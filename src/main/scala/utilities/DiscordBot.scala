@@ -77,7 +77,7 @@ object DiscordBot {
     )
     val interactionResponse = InteractionResponse(
       `type` = interaction.`type`,
-      data = interactionResponseData
+      data = Some(interactionResponseData)
     )
     val body = interactionResponseData.asJson.noSpaces
     val backend = DefaultSyncBackend()
